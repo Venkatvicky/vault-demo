@@ -4,7 +4,7 @@ metadata:
   name: postgres
   namespace: postgres
 spec:
-  replicas: {{ .Values.postgres.replicas }}
+  replicas: 1
   selector:
     matchLabels:
       app: postgres
@@ -17,20 +17,20 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: postgres
-        image: {{ .Values.postgres.image }}
+        image: postgres:15
         imagePullPolicy: Always
         env:
         - name: POSTGRES_USER
-          value: {{ .Values.postgres.username }}
+          value: "admin"
         - name: POSTGRES_PASSWORD
-          value: {{ .Values.postgres.password }}
+          value: "securepassword"
         - name: POSTGRES_DB
-          value: {{ .Values.postgres.database }}
+          value: "maindb"
         ports:
         - containerPort: 5432
         volumeMounts:
         - name: postgres-storage
-          mountPath: /mnt/postgres-data  # Updated path here
+          mountPath: /var/lib/postgresql/data
         resources:
           requests:
             memory: "512Mi"
@@ -39,16 +39,14 @@ spec:
             memory: "1Gi"
             cpu: "1"
         livenessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 5432
-          initialDelaySeconds: 60   # Increased delay for database initialization
+          initialDelaySeconds: 60
           periodSeconds: 20
         readinessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 5432
-          initialDelaySeconds: 60   # Increased delay for database initialization
+          initialDelaySeconds: 60
           periodSeconds: 20
         securityContext:
           runAsUser: 1000
@@ -60,4 +58,4 @@ spec:
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
-          claimName: postgres-pvc-new  # Make sure this matches your PVC definition
+          claimName: postgres-pvc-new
