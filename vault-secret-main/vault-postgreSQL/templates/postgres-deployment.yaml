@@ -13,7 +13,7 @@ spec:
       labels:
         app: postgres
     spec:
-      securityContext:  # ✅ Add this block for the pod-level security context
+      securityContext:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 2000
@@ -42,14 +42,12 @@ spec:
             memory: "1Gi"
             cpu: "1"
         livenessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 5432
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 5432
           initialDelaySeconds: 30
           periodSeconds: 10
