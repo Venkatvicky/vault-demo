@@ -1,19 +1,14 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-internal-namespace
+  name: vault-allow-same-namespace
   namespace: vault
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: vault-agent-injector
-      app.kubernetes.io/instance: vault
+      app: vault
   policyTypes:
-    - Ingress
-    - Egress
+  - Ingress
   ingress:
-    - from:
-        - podSelector: {}
-  egress:
-    - to:
-        - podSelector: {}
+  - from:
+    - podSelector: {}
