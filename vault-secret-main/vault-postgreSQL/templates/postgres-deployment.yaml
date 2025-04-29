@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: postgres  # Specify the desired namespace
+  namespace: postgres
 spec:
   replicas: {{ .Values.postgres.replicas }}
   selector:
@@ -13,11 +13,15 @@ spec:
       labels:
         app: postgres
     spec:
-      automountServiceAccountToken: false  # Avoid unnecessary service account token mounting
+      securityContext:  # ✅ Add this block for the pod-level security context
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
+      automountServiceAccountToken: false
       containers:
       - name: postgres
         image: {{ .Values.postgres.image }}
-        imagePullPolicy: Always  # Always pull the latest image
+        imagePullPolicy: Always
         env:
         - name: POSTGRES_USER
           value: {{ .Values.postgres.username }}
@@ -32,11 +36,11 @@ spec:
           mountPath: {{ .Values.postgres.storagePath }}
         resources:
           requests:
-            memory: "512Mi"  # Adjust based on your requirements
-            cpu: "500m"      # Adjust based on your requirements
+            memory: "512Mi"
+            cpu: "500m"
           limits:
-            memory: "1Gi"    # Adjust based on your requirements
-            cpu: "1"         # Adjust based on your requirements
+            memory: "1Gi"
+            cpu: "1"
         livenessProbe:
           httpGet:
             path: /health
@@ -50,12 +54,10 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 10
         securityContext:
-          runAsUser: 1000  # Ensure the container runs as a non-root user (adjust as needed)
-          runAsGroup: 1000 # Ensure the container runs with a non-root group (adjust as needed)
-          allowPrivilegeEscalation: false  # Prevent privilege escalation
+          allowPrivilegeEscalation: false
           capabilities:
             drop:
-              - ALL  # Drop unnecessary capabilities
+              - ALL
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
