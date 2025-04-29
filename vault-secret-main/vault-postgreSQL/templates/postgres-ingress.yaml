@@ -4,14 +4,16 @@ metadata:
   name: postgres-ingress
   namespace: postgres  # ✅ Move out of default namespace
   annotations:
-    kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: nginx  # Ensure Nginx ingress controller is installed
 spec:
   rules:
-  - host: {{ .Values.postgres.ingress.host }}
+  - host: {{ .Values.postgres.ingress.host }}  # Ensure this is properly defined in your values.yaml
     http:
       paths:
-      - path: /
+      - path: /  # Adjust if you need to specify different paths for routing
         pathType: Prefix
         backend:
           service:
-            name: postgres
+            name: postgres  # The name of the PostgreSQL service
+            port:
+              number: 5432  # Ensure this matches the port of your PostgreSQL service
