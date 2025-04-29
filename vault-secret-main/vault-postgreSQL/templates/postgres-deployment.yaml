@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
+  namespace: postgres  # Specify the desired namespace
 spec:
   replicas: {{ .Values.postgres.replicas }}
   selector:
@@ -12,9 +13,11 @@ spec:
       labels:
         app: postgres
     spec:
+      automountServiceAccountToken: false  # Avoid unnecessary service account token mounting
       containers:
       - name: postgres
         image: {{ .Values.postgres.image }}
+        imagePullPolicy: Always  # Always pull the latest image
         env:
         - name: POSTGRES_USER
           value: {{ .Values.postgres.username }}
@@ -27,6 +30,32 @@ spec:
         volumeMounts:
         - name: postgres-storage
           mountPath: {{ .Values.postgres.storagePath }}
+        resources:
+          requests:
+            memory: "512Mi"  # Adjust based on your requirements
+            cpu: "500m"      # Adjust based on your requirements
+          limits:
+            memory: "1Gi"    # Adjust based on your requirements
+            cpu: "1"         # Adjust based on your requirements
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        securityContext:
+          runAsUser: 1000  # Ensure the container runs as a non-root user (adjust as needed)
+          runAsGroup: 1000 # Ensure the container runs with a non-root group (adjust as needed)
+          allowPrivilegeEscalation: false  # Prevent privilege escalation
+          capabilities:
+            drop:
+              - ALL  # Drop unnecessary capabilities
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
