@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-agent
+  namespace: vault
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-agent  # ✅ Must match template labels
+  template:
+    metadata:
+      labels:
+        app: vault-agent  # ✅ Required
+    spec:
+      serviceAccountName: vault-sa  # ✅ Link to the service account you created
+      automountServiceAccountToken: false  # ✅ Avoid automatic token mounting if not required
+      containers:
+      - name: vault-agent
+        image: hashicorp/vault:1.15.0
+        imagePullPolicy: Always  # Always pull the latest image
+        ports:
+        - containerPort: 8200
+        volumeMounts:
+        - name: vault-agent-storage
+          mountPath: /vault/config  # Mounts the config files (adjust as necessary)
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /v1/sys/health
+            port: 8200
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /v1/sys/health
+            port: 8200
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+      volumes:
+      - name: vault-agent-storage
+        persistentVolumeClaim:
+          claimName: vault-agent-pvc
