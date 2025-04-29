@@ -26,11 +26,15 @@ spec:
         args:
           - "server"
           - "-config=/vault/config/vault.hcl"
-        ports:
-        - containerPort: 8200
         env:
         - name: VAULT_ADDR
           value: http://127.0.0.1:8200
+        - name: VAULT_USER
+          value: "vaultuser"     # match your Postgres user
+        - name: VAULT_PASSWORD
+          value: "vaultpass"     # match your Postgres password
+        ports:
+        - containerPort: 8200
         volumeMounts:
         - name: vault-storage
           mountPath: /vault/data
@@ -47,16 +51,14 @@ spec:
           httpGet:
             path: /v1/sys/health?standbyok=true&sealedcode=200
             port: 8200
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          failureThreshold: 3
+          initialDelaySeconds: 60
+          periodSeconds: 15
         readinessProbe:
           httpGet:
             path: /v1/sys/health?standbyok=true&sealedcode=200
             port: 8200
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          failureThreshold: 3
+          initialDelaySeconds: 60
+          periodSeconds: 15
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
