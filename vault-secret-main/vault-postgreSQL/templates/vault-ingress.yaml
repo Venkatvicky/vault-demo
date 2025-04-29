@@ -16,4 +16,4 @@ spec:
           service:
             name: vault
             port:
-              number:
+              number: 8200
