@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: vault
+  namespace: vault  # ✅ Not using default namespace
 spec:
   replicas: {{ .Values.vault.replicas }}
   selector:
@@ -12,14 +13,47 @@ spec:
       labels:
         app: vault
     spec:
+      serviceAccountName: vault-sa  # ✅ (You should create a ServiceAccount separately)
+      automountServiceAccountToken: false  # ✅ Don't mount tokens automatically
+      securityContext:  # ✅ Pod-level security context
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
       - name: vault
         image: {{ .Values.vault.image }}
+        imagePullPolicy: Always  # ✅ Always pull latest image
         ports:
         - containerPort: 8200
         volumeMounts:
         - name: vault-storage
           mountPath: {{ .Values.vault.storagePath }}
+        resources:  # ✅ Set CPU/memory requests and limits
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+        livenessProbe:  # ✅ Liveness probe
+          httpGet:
+            path: /v1/sys/health
+            port: 8200
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:  # ✅ Readiness probe
+          httpGet:
+            path: /v1/sys/health
+            port: 8200
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        securityContext:  # ✅ Container-level security context
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
       volumes:
       - name: vault-storage
         persistentVolumeClaim:
