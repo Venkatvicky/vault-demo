@@ -13,10 +13,7 @@ spec:
       labels:
         app: postgres
     spec:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 2000
+      serviceAccountName: postgres-sa
       automountServiceAccountToken: false
       containers:
       - name: postgres
@@ -33,7 +30,7 @@ spec:
         - containerPort: 5432
         volumeMounts:
         - name: postgres-storage
-          mountPath: {{ .Values.postgres.storagePath }}
+          mountPath: /mnt/postgres-data  # Updated path here
         resources:
           requests:
             memory: "512Mi"
@@ -42,16 +39,20 @@ spec:
             memory: "1Gi"
             cpu: "1"
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /health
             port: 5432
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 60   # Increased delay for database initialization
+          periodSeconds: 20
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /health
             port: 5432
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 60   # Increased delay for database initialization
+          periodSeconds: 20
         securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
           allowPrivilegeEscalation: false
           capabilities:
             drop:
@@ -59,4 +60,4 @@ spec:
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
-          claimName: postgres-pvc-new
+          claimName: postgres-pvc-new  # Make sure this matches your PVC definition
