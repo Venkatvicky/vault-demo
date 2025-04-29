@@ -7,23 +7,23 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vault-agent  # ✅ Must match template labels
+      app: vault-agent
   template:
     metadata:
       labels:
-        app: vault-agent  # ✅ Required
+        app: vault-agent
     spec:
-      serviceAccountName: vault-sa  # ✅ Link to the service account you created
-      automountServiceAccountToken: false  # ✅ Avoid automatic token mounting if not required
+      serviceAccountName: vault-sa
+      automountServiceAccountToken: false
       containers:
       - name: vault-agent
         image: hashicorp/vault:1.15.0
-        imagePullPolicy: Always  # Always pull the latest image
+        imagePullPolicy: Always
         ports:
         - containerPort: 8200
         volumeMounts:
         - name: vault-agent-storage
-          mountPath: /vault/config  # Mounts the config files (adjust as necessary)
+          mountPath: /vault/config
         resources:
           requests:
             memory: "256Mi"
@@ -33,16 +33,18 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /v1/sys/health
+            path: /v1/sys/health?standbyok=true&sealedcode=200
             port: 8200
           initialDelaySeconds: 30
           periodSeconds: 10
+          failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /v1/sys/health
+            path: /v1/sys/health?standbyok=true&sealedcode=200
             port: 8200
           initialDelaySeconds: 30
           periodSeconds: 10
+          failureThreshold: 3
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
