@@ -2,12 +2,11 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc-new
-  labels:
-    app: postgres
+  namespace: postgres
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
-  storageClassName: gp3-csi
+      storage: 10Gi
+  storageClassName: gp3-csi  # or whatever your StorageClass is
