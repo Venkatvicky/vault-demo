@@ -25,7 +25,7 @@ spec:
         command: ["sh", "-c", "chown -R 1000:1000 /vault/data"]
         volumeMounts:
         - name: vault-storage
-          mountPath: /vault/data
+          mountPath: /mnt/vault-data
       containers:
       - name: vault
         image: hashicorp/vault:1.15.0
