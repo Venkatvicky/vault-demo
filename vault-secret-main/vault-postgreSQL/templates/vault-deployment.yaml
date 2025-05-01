@@ -19,6 +19,13 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1000 /vault/data"]
+        volumeMounts:
+        - name: vault-storage
+          mountPath: /vault/data
       containers:
       - name: vault
         image: hashicorp/vault:1.15.0
@@ -30,9 +37,9 @@ spec:
         - name: VAULT_ADDR
           value: http://127.0.0.1:8200
         - name: VAULT_USER
-          value: "vaultuser"     # match your Postgres user
+          value: "vaultuser"
         - name: VAULT_PASSWORD
-          value: "vaultpass"     # match your Postgres password
+          value: "vaultpass"
         ports:
         - containerPort: 8200
         volumeMounts:
