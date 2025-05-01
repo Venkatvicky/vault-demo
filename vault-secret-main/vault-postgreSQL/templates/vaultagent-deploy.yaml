@@ -21,9 +21,7 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8200
-        volumeMounts:
-        - name: vault-agent-storage
-          mountPath: /vault/config
+        volumeMounts: []
         resources:
           requests:
             memory: "256Mi"
@@ -52,7 +50,3 @@ spec:
           capabilities:
             drop:
               - ALL
-      volumes:
-      - name: vault-agent-storage
-        persistentVolumeClaim:
-          claimName: vault-agent-pvc
