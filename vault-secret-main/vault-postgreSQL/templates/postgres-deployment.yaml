@@ -65,5 +65,6 @@ spec:
               - ALL
       volumes:
       - name: postgres-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc-new
+        hostPath:
+          path: /mnt/postgres-data
+          type: DirectoryOrCreate
