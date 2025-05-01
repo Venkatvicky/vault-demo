@@ -21,9 +21,14 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8200
+        env:
+        - name: VAULT_ADDR
+          value: "http://vault:8200"  # Ensure this matches your Vault server address
+        - name: VAULT_TOKEN
+          value: "your-vault-token-here"  # Replace with a valid Vault token if required
         volumeMounts:
         - name: vault-agent-storage
-          mountPath: /vault/config  # Or whichever directory is appropriate for your Vault agent
+          mountPath: /vault/config
         resources:
           requests:
             memory: "256Mi"
@@ -35,16 +40,16 @@ spec:
           httpGet:
             path: /v1/sys/health?standbyok=true&sealedcode=200
             port: 8200
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          failureThreshold: 3
+          initialDelaySeconds: 60  # Increased delay
+          periodSeconds: 20        # Increased period
+          failureThreshold: 5      # Added threshold
         readinessProbe:
           httpGet:
             path: /v1/sys/health?standbyok=true&sealedcode=200
             port: 8200
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          failureThreshold: 3
+          initialDelaySeconds: 60  # Increased delay
+          periodSeconds: 20        # Increased period
+          failureThreshold: 5      # Added threshold
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
@@ -55,4 +60,4 @@ spec:
       volumes:
       - name: vault-agent-storage
         persistentVolumeClaim:
-          claimName: vault-agent-pvc
+          claimName: vault-agent-pvc  # Ensure you have this PVC defined
