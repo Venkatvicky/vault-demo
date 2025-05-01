@@ -58,14 +58,14 @@ spec:
           httpGet:
             path: /v1/sys/health?standbyok=true&sealedcode=200
             port: 8200
-          initialDelaySeconds: 60
-          periodSeconds: 15
+          initialDelaySeconds: 120
+          periodSeconds: 20
         readinessProbe:
           httpGet:
             path: /v1/sys/health?standbyok=true&sealedcode=200
             port: 8200
-          initialDelaySeconds: 60
-          periodSeconds: 15
+          initialDelaySeconds: 120
+          periodSeconds: 20
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
@@ -79,4 +79,4 @@ spec:
           claimName: vault-pvc-new
       - name: config
         configMap:
-          name: vault-config
+          name: vault-config4
