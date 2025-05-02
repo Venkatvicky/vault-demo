@@ -1,83 +1,58 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vault
+  name: vault-agent
   namespace: vault
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vault
+      app: vault-agent
   template:
     metadata:
       labels:
-        app: vault
+        app: vault-agent
     spec:
       serviceAccountName: vault-sa
-      automountServiceAccountToken: false
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
-      initContainers:
-      - name: fix-permissions
-        image: busybox
-        command: ["sh", "-c", "chown -R 1000:1000 /mnt/vault-data"]
-        volumeMounts:
-        - name: vault-storage
-          mountPath: /mnt/vault-data
       containers:
-      - name: vault
-        image: hashicorp/vault:1.15.0
-        imagePullPolicy: Always
-        args:
-          - "server"
-          - "-config=/vault/config/vault.hcl"
-        env:
-        - name: VAULT_ADDR
-          value: http://127.0.0.1:8200
-        - name: VAULT_USER
-          value: "vaultuser"
-        - name: VAULT_PASSWORD
-          value: "vaultpass"
-        ports:
-        - containerPort: 8200
-        volumeMounts:
-        - name: vault-storage
-          mountPath: /vault/data
-        - name: config
-          mountPath: /vault/config
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "500m"
-          limits:
-            memory: "1Gi"
-            cpu: "1"
-        livenessProbe:
-          httpGet:
-            path: /v1/sys/health?standbyok=true&sealedcode=200
-            port: 8200
-          initialDelaySeconds: 180
-          periodSeconds: 20
-        readinessProbe:
-          httpGet:
-            path: /v1/sys/health?standbyok=true&sealedcode=200
-            port: 8200
-          initialDelaySeconds: 180
-          periodSeconds: 20
-        securityContext:
-          runAsUser: 1000
-          runAsGroup: 1000
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
+        - name: vault-agent
+          image: hashicorp/vault:1.15.0
+          imagePullPolicy: Always
+          args:
+            - "agent"
+            - "-config=/vault/config/vault-agent-config.hcl"
+          env:
+            - name: VAULT_ADDR
+              value: "http://vault:8200"
+          ports:
+            - containerPort: 8200
+          volumeMounts:
+            - name: vault-config
+              mountPath: /vault/config
+              readOnly: true  # ConfigMap is read-only
+            - name: vault-agent-storage
+              mountPath: /mnt/data/vault-agent  # Writable volume
+        initContainers:
+          - name: fix-permissions
+            image: busybox
+            imagePullPolicy: Always
+            command:
+              - sh
+              - -c
+              - chown -R 1000:1000 /mnt/data/vault-agent  # Apply chown to writable volume
+            securityContext:
+              runAsUser: 0
+            volumeMounts:
+              - name: vault-agent-storage
+                mountPath: /mnt/data/vault-agent
       volumes:
-      - name: vault-storage
-        persistentVolumeClaim:
-          claimName: vault-pvc-new
-      - name: config
-        configMap:
-          name: vault-config4
-
+        - name: vault-config
+          configMap:
+            name: vault-agent-config  # The ConfigMap holding the vault-agent-config.hcl file
+        - name: vault-agent-storage
+          persistentVolumeClaim:
+            claimName: vault-agent-pvc  # Ensure PVC is not read-only
