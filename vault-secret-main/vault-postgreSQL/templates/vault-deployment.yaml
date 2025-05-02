@@ -22,7 +22,7 @@ spec:
       initContainers:
       - name: fix-permissions
         image: busybox
-        command: ["sh", "-c", "chown -R 1000:1000 /vault/data"]
+        command: ["sh", "-c", "chown -R 1000:1000 /mnt/vault-data"]
         volumeMounts:
         - name: vault-storage
           mountPath: /mnt/vault-data
@@ -58,13 +58,13 @@ spec:
           httpGet:
             path: /v1/sys/health?standbyok=true&sealedcode=200
             port: 8200
-          initialDelaySeconds: 120
+          initialDelaySeconds: 180
           periodSeconds: 20
         readinessProbe:
           httpGet:
             path: /v1/sys/health?standbyok=true&sealedcode=200
             port: 8200
-          initialDelaySeconds: 120
+          initialDelaySeconds: 180
           periodSeconds: 20
         securityContext:
           runAsUser: 1000
@@ -80,3 +80,54 @@ spec:
       - name: config
         configMap:
           name: vault-config4
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vault-pvc-new
+  namespace: vault
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: gp3-csi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-config4
+  namespace: vault
+data:
+  vault.hcl: |
+    ui = true
+    listener "tcp" {
+      address = "0.0.0.0:8200"
+      cluster_address = "0.0.0.0:8201"
+      tls_disable = 1
+    }
+    storage "consul" {
+      address = "consul-server:8500"
+      path = "vault/"
+      token = "vault-token"
+    }
+    api_addr = "http://127.0.0.1:8200"
+    disable_mlock = true
+    seal "awskms" {
+      region = "us-west-2"
+      kms_key_id = "your-kms-key-id"
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault
+  namespace: vault
+spec:
+  ports:
+    - port: 8200
+      targetPort: 8200
+  selector:
+    app: vault
+  type: LoadBalancer
