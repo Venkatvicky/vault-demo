@@ -72,18 +72,22 @@ spec:
             runAsUser: 1000
       initContainers:
         - name: fix-permissions
-          image: busybox
+          image: alpine:latest
           command:
             - sh
             - '-c'
-            - chown -R 1000:1000 /mnt/vault-data
+            - |
+              echo "Running chown command on /mnt/vault-data"
+              chown -R 1000:1000 /mnt/vault-data || exit 0
+          securityContext:
+            allowPrivilegeEscalation: true  # Allow privilege escalation
           volumeMounts:
             - mountPath: /mnt/vault-data
               name: vault-storage
       volumes:
         - name: vault-storage
           persistentVolumeClaim:
-            claimName: vault-agent-pvc   # Changed here to use the already Bound PVC
+            claimName: vault-agent-pvc  # Use the already Bound PVC
         - name: config
           configMap:
-            name: vault-config4
+            name: vault-config4  # Ensure this matches your config map name
