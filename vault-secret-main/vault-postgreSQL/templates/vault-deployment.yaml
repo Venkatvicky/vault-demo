@@ -29,6 +29,8 @@ spec:
             - server
             - '-config=/vault/config/vault.hcl'
           env:
+            - name: VAULT_API_ADDR
+              value: http://0.0.0.0:8200
             - name: VAULT_ADDR
               value: http://127.0.0.1:8200
             - name: VAULT_USER
@@ -44,7 +46,7 @@ spec:
               name: config
           resources:
             limits:
-              cpu: '1'
+              cpu: "1"
               memory: 1Gi
             requests:
               cpu: 500m
@@ -73,7 +75,7 @@ spec:
           image: busybox
           command:
             - sh
-            - '-c'
+            - -c
             - chown -R 1000:1000 /mnt/vault-data
           volumeMounts:
             - mountPath: /mnt/vault-data
@@ -81,7 +83,7 @@ spec:
       volumes:
         - name: vault-storage
           persistentVolumeClaim:
-            claimName: vault-pvc-new
+            claimName: vault-agent-pvc   # ✅ Using the existing working PVC
         - name: config
           configMap:
-            name: vault-config4
+            name: vault-config4           # ✅ Your ConfigMap name
