@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: vault
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 600   # Increased timeout for overall deployment progress
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      serviceAccountName: postgres-sa
+      automountServiceAccountToken: false
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "mkdir -p /mnt/postgres-data && chown -R 1000:1000 /mnt/postgres-data"]
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /mnt/postgres-data
+      containers:
+      - name: postgres
+        image: postgres:15
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: POSTGRES_USER
+          value: "admin"
+        - name: POSTGRES_PASSWORD
+          value: "securepassword"
+        - name: POSTGRES_DB
+          value: "maindb"
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        # Allow extra time for PostgreSQL to start
+        startupProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - admin
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 30
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - admin
+          initialDelaySeconds: 60  # Increased delay, so readiness checks start later
+          periodSeconds: 10
+          failureThreshold: 5
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - admin
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          failureThreshold: 5
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: postgres-storage
+        hostPath:
+          path: /mnt/postgres-data
+          type: DirectoryOrCreate
