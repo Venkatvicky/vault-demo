@@ -23,7 +23,7 @@ spec:
         runAsGroup: 1000
         runAsUser: 1000
         readOnlyRootFilesystem: false  # Allow read-write access
-        allowPrivilegeEscalation: true  # Ensure privilege escalation is allowed
+        allowPrivilegeEscalation: false  # Ensure privilege escalation is allowed
       containers:
         - name: vault
           image: hashicorp/vault:1.15.0
