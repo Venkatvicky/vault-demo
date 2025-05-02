@@ -43,6 +43,9 @@ spec:
           volumeMounts:
             - name: vault-storage
               mountPath: /vault/data
+            - name: config
+              mountPath: /vault/config
+              subPath: vault.hcl
           resources:
             requests:
               memory: "512Mi"
@@ -77,3 +80,6 @@ spec:
         - name: config
           configMap:
             name: vault-config  # Reference your Vault config map
+            items:
+              - key: vault.hcl
+                path: vault.hcl  # Mounts the config file from the config map into the container
