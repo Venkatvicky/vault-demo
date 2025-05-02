@@ -15,6 +15,8 @@ spec:
     spec:
       serviceAccountName: vault-sa
       automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
       initContainers:
         - name: fix-data-permissions
           image: busybox
@@ -28,6 +30,23 @@ spec:
           volumeMounts:
             - name: vault-storage
               mountPath: /vault/data
+
+        - name: copy-config
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /vault/config
+              cp /source/vault.hcl /vault/config/vault.hcl
+              chown 1000:1000 /vault/config/vault.hcl
+          volumeMounts:
+            - name: configmap-readonly
+              mountPath: /source
+              readOnly: true
+            - name: configmap-copy
+              mountPath: /vault/config
+              
       containers:
         - name: vault
           image: hashicorp/vault:1.15.0
@@ -45,9 +64,8 @@ spec:
           volumeMounts:
             - name: vault-storage
               mountPath: /vault/data
-            - name: config
+            - name: configmap-copy
               mountPath: /vault/config
-              readOnly: true
           resources:
             requests:
               memory: "512Mi"
@@ -79,9 +97,11 @@ spec:
           hostPath:
             path: /mnt/vault-data
             type: DirectoryOrCreate
-        - name: config
+        - name: configmap-readonly
           configMap:
             name: vault-config1
             items:
               - key: vault.hcl
                 path: vault.hcl
+        - name: configmap-copy
+          emptyDir: {}
