@@ -79,7 +79,7 @@ spec:
             type: DirectoryOrCreate  # Create the directory if it doesn't exist
         - name: config
           configMap:
-            name: vault-config  # Reference your Vault config map
+            name: vault-config1  # Reference your Vault config map
             items:
               - key: vault.hcl
                 path: vault.hcl  # Mount the file correctly into the container
