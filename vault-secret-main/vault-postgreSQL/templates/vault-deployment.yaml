@@ -77,7 +77,7 @@ spec:
             - sh
             - '-c'
             - |
-              echo "Running chown command on /mnt/vault-data"
+              echo "Fixing permissions only on /mnt/vault-data"
               chown -R 1000:1000 /mnt/vault-data || exit 0
           securityContext:
             allowPrivilegeEscalation: true  # Allow privilege escalation
