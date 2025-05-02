@@ -67,7 +67,7 @@ spec:
             initialDelaySeconds: 180
             periodSeconds: 20
           securityContext:
-            allowPrivilegeEscalation: false
+            allowPrivilegeEscalation: true
             capabilities:
               drop:
                 - ALL
