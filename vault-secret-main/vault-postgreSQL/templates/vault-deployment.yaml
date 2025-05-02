@@ -86,4 +86,4 @@ spec:
             claimName: vault-agent-pvc   # Changed here to use the already Bound PVC
         - name: config
           configMap:
-            name: vault-config4
+            name: vault-config
