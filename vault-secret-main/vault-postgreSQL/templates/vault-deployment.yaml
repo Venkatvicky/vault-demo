@@ -7,7 +7,6 @@ metadata:
   namespace: vault
 spec:
   replicas: 1
-  progressDeadlineSeconds: 600 # Increased progress deadline
   selector:
     matchLabels:
       app: vault
@@ -22,8 +21,6 @@ spec:
         fsGroup: 1000
         runAsGroup: 1000
         runAsUser: 1000
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: false  # Allow write access to the filesystem
       containers:
         - name: vault
           image: hashicorp/vault:1.15.0
@@ -32,8 +29,6 @@ spec:
             - server
             - '-config=/vault/config/vault.hcl'
           env:
-            - name: SKIP_CHOWN
-              value: "true"
             - name: VAULT_API_ADDR
               value: http://0.0.0.0:8200
             - name: VAULT_ADDR
@@ -51,11 +46,11 @@ spec:
               name: config
           resources:
             limits:
-              cpu: "500m"
-              memory: 512Mi
+              cpu: '1'
+              memory: 1Gi
             requests:
-              cpu: 250m
-              memory: 256Mi
+              cpu: 500m
+              memory: 512Mi
           livenessProbe:
             httpGet:
               path: /v1/sys/health?standbyok=true&sealedcode=200
@@ -68,10 +63,27 @@ spec:
               port: 8200
             initialDelaySeconds: 180
             periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsGroup: 1000
+            runAsUser: 1000
+      initContainers:
+        - name: fix-permissions
+          image: busybox
+          command:
+            - sh
+            - '-c'
+            - chown -R 1000:1000 /mnt/vault-data
+          volumeMounts:
+            - mountPath: /mnt/vault-data
+              name: vault-storage
       volumes:
         - name: vault-storage
           persistentVolumeClaim:
-            claimName: vault-agent-pvc
+            claimName: vault-agent-pvc   # Changed here to use the already Bound PVC
         - name: config
           configMap:
-            name: vault-config
+            name: vault-config4
