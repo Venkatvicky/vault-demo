@@ -7,7 +7,7 @@ metadata:
   namespace: vault
 spec:
   replicas: 1
-  progressDeadlineSeconds: 600 # Increased progress deadline
+  progressDeadlineSeconds: 600
   selector:
     matchLabels:
       app: vault
@@ -22,6 +22,8 @@ spec:
         fsGroup: 1000
         runAsGroup: 1000
         runAsUser: 1000
+        readOnlyRootFilesystem: false  # Allow read-write access
+        allowPrivilegeEscalation: true  # Ensure privilege escalation is allowed
       containers:
         - name: vault
           image: hashicorp/vault:1.15.0
@@ -66,13 +68,6 @@ spec:
               port: 8200
             initialDelaySeconds: 180
             periodSeconds: 20
-          securityContext:
-            allowPrivilegeEscalation: true
-            capabilities:
-              drop:
-                - ALL
-            runAsGroup: 1000
-            runAsUser: 1000
       volumes:
         - name: vault-storage
           persistentVolumeClaim:
