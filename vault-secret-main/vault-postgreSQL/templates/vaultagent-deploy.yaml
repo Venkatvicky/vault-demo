@@ -14,6 +14,21 @@ spec:
         app: vault-agent
     spec:
       serviceAccountName: vault-sa
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1000 /mnt/data/vault-agent"]
+        volumeMounts:
+        - name: vault-agent-storage
+          mountPath: /mnt/data/vault-agent
+        securityContext:
+          runAsUser: 0
+
       containers:
       - name: vault-agent
         image: hashicorp/vault:1.15.0
@@ -27,11 +42,11 @@ spec:
         ports:
         - containerPort: 8200
         volumeMounts:
+        - name: vault-agent-storage
+          mountPath: /mnt/data/vault-agent
         - name: vault-config
           mountPath: /vault/config
           readOnly: true
-        - name: vault-agent-storage
-          mountPath: /mnt/data/vault-agent
         resources:
           requests:
             memory: "256Mi"
@@ -53,15 +68,4 @@ spec:
           periodSeconds: 20
         securityContext:
           runAsUser: 1000
-          runAsGroup: 1000
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-      volumes:
-      - name: vault-config
-        configMap:
-          name: vault-agent-config
-      - name: vault-agent-storage
-        persistentVolumeClaim:
-          claimName: vault-agent-pvc
+          runAsGroup: 100
