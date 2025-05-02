@@ -14,6 +14,7 @@ spec:
         app: vault-agent
     spec:
       serviceAccountName: vault-sa
+      automountServiceAccountToken: false
       containers:
       - name: vault-agent
         image: hashicorp/vault:1.15.0
@@ -21,14 +22,16 @@ spec:
         args:
           - "agent"
           - "-config=/vault/config/vault-agent-config.hcl"
-        ports:
-        - containerPort: 8200
         env:
-        - name: VAULT_ADDR
-          value: "http://vault:8200"
+          - name: VAULT_ADDR
+            value: "http://vault:8200"
+          - name: VAULT_LOG_LEVEL
+            value: debug
+        ports:
+          - containerPort: 8200
         volumeMounts:
-        - name: vault-config
-          mountPath: /vault/config
+          - name: vault-config
+            mountPath: /vault/config
         resources:
           requests:
             memory: "256Mi"
@@ -56,6 +59,6 @@ spec:
             drop:
               - ALL
       volumes:
-      - name: vault-config
-        configMap:
-          name: vault-agent-config
+        - name: vault-config
+          configMap:
+            name: vault-agent-config
