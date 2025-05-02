@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: vault-agent
   namespace: vault
+  labels:
+    app: vault-agent
 spec:
   replicas: 1
   selector:
@@ -14,44 +16,64 @@ spec:
         app: vault-agent
     spec:
       serviceAccountName: vault-sa
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+      automountServiceAccountToken: false
       containers:
-      - name: vault-agent
-        image: hashicorp/vault:1.15.0
-        imagePullPolicy: Always
-        args:
-          - "agent"
-          - "-config=/vault/config/vault-agent-config.hcl"
-        env:
-          - name: VAULT_ADDR
-            value: "http://vault:8200"
-        ports:
-          - containerPort: 8200
-        volumeMounts:
-          - name: vault-config
-            mountPath: /vault/config
-            readOnly: true
-          - name: vault-agent-storage
-            mountPath: /mnt/data/vault-agent
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
+        - name: vault-agent
+          image: hashicorp/vault:1.15.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8200
+          volumeMounts:
+            - name: vault-agent-storage
+              mountPath: /mnt/data/vault-agent
+            - name: vault-config
+              mountPath: /vault/config
+              readOnly: true
+          env:
+            - name: VAULT_ADDR
+              value: "http://vault:8200"  # Adjust Vault address if needed
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true&sealedcode=200
+              port: 8200
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true&sealedcode=200
+              port: 8200
+            initialDelaySeconds: 60
+            periodSeconds: 20
+      initContainers:
+        - name: fix-permissions
+          image: busybox
+          imagePullPolicy: Always
+          command:
+            - sh
+            - -c
+            - chown -R 1000:1000 /mnt/data/vault-agent
+          volumeMounts:
+            - name: vault-agent-storage
+              mountPath: /mnt/data/vault-agent
+          securityContext:
+            runAsUser: 0
       volumes:
-        - name: vault-config
-          configMap:
-            name: vault-agent-config
         - name: vault-agent-storage
           persistentVolumeClaim:
             claimName: vault-agent-pvc
+        - name: vault-config
+          configMap:
+            name: vault-agent-config
+      restartPolicy: Always
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsUser: 1000
+      terminationGracePeriodSeconds: 30
