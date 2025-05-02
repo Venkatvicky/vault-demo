@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: vault-agent
   namespace: vault
-  labels:
-    app: vault-agent
 spec:
   replicas: 1
   selector:
@@ -23,15 +21,14 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8200
+          env:
+            - name: VAULT_ADDR
+              value: "http://vault:8200"  # Adjust Vault address if needed
           volumeMounts:
             - name: vault-agent-storage
               mountPath: /mnt/data/vault-agent
             - name: vault-config
-              mountPath: /vault/config
-              readOnly: true
-          env:
-            - name: VAULT_ADDR
-              value: "http://vault:8200"  # Adjust Vault address if needed
+              mountPath: /vault/config  # No "readOnly: true" here
           resources:
             requests:
               memory: "256Mi"
@@ -51,10 +48,16 @@ spec:
               port: 8200
             initialDelaySeconds: 60
             periodSeconds: 20
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       initContainers:
         - name: fix-permissions
           image: busybox
-          imagePullPolicy: Always
           command:
             - sh
             - -c
@@ -62,8 +65,6 @@ spec:
           volumeMounts:
             - name: vault-agent-storage
               mountPath: /mnt/data/vault-agent
-          securityContext:
-            runAsUser: 0
       volumes:
         - name: vault-agent-storage
           persistentVolumeClaim:
@@ -72,8 +73,8 @@ spec:
           configMap:
             name: vault-agent-config
       restartPolicy: Always
+      terminationGracePeriodSeconds: 30
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
         runAsUser: 1000
-      terminationGracePeriodSeconds: 30
