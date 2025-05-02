@@ -14,6 +14,13 @@ spec:
         app: vault-agent
     spec:
       serviceAccountName: vault-sa
+      initContainers:
+        - name: create-token-dir
+          image: busybox
+          command: ["sh", "-c", "mkdir -p /mnt/data/vault-agent"]
+          volumeMounts:
+            - name: token
+              mountPath: /mnt/data
       containers:
         - name: vault-agent
           image: hashicorp/vault:1.15.0
@@ -26,7 +33,7 @@ spec:
               mountPath: /vault/config
               readOnly: true
             - name: token
-              mountPath: /home/vault
+              mountPath: /mnt/data
       volumes:
         - name: config
           configMap:
