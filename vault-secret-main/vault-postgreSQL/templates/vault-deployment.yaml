@@ -18,39 +18,52 @@ spec:
       securityContext:
         fsGroup: 1000
       initContainers:
-        - name: fix-data-permissions
-          image: busybox
+        - name: fix-permissions
+          image: alpine:3.18
           command:
-            - sh
+            - /bin/sh
             - -c
             - |
-              mkdir -p /vault/data
-              chown -R 1000:1000 /vault/data
-              chmod -R 700 /vault/data
+              chmod -R 755 /vault/config || echo "warn: chmod fail"
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
-            - name: vault-storage
-              mountPath: /vault/data
+            - name: configmap-copy
+              mountPath: /vault/config
 
         - name: copy-config
-          image: busybox
+          image: alpine:3.18
           command:
-            - sh
+            - /bin/sh
             - -c
             - |
               mkdir -p /vault/config
               cp /source/vault.hcl /vault/config/vault.hcl
-              chown 1000:1000 /vault/config/vault.hcl
+              chmod 644 /vault/config/vault.hcl
+              ls -l /vault/config  # Check if the file is copied
+              sleep 30  # Keep the container running for debugging
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - name: configmap-readonly
               mountPath: /source
               readOnly: true
             - name: configmap-copy
               mountPath: /vault/config
-              
+
       containers:
         - name: vault
           image: hashicorp/vault:1.15.0
-          imagePullPolicy: IfNotPresent
           args:
             - "server"
             - "-config=/vault/config/vault.hcl"
@@ -66,6 +79,7 @@ spec:
               mountPath: /vault/data
             - name: configmap-copy
               mountPath: /vault/config
+              readOnly: true
           resources:
             requests:
               memory: "512Mi"
@@ -92,6 +106,7 @@ spec:
             capabilities:
               drop:
                 - ALL
+
       volumes:
         - name: vault-storage
           hostPath:
