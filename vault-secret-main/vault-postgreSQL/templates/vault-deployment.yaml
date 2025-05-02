@@ -18,10 +18,16 @@ spec:
       initContainers:
         - name: fix-permissions
           image: busybox
-          command: ["sh", "-c", "mkdir -p /mnt/vault-data && chown -R 1000:1000 /mnt/vault-data"]
+          command: ["sh", "-c", "mkdir -p /mnt/vault-data && chown -R 1000:1000 /mnt/vault-data && chmod -R 755 /mnt/vault-data"]
           volumeMounts:
             - name: vault-storage
               mountPath: /mnt/vault-data
+        - name: fix-config-permissions
+          image: busybox
+          command: ["sh", "-c", "chmod 755 /vault/config && chown 1000:1000 /vault/config"]
+          volumeMounts:
+            - name: config
+              mountPath: /vault/config
       containers:
         - name: vault
           image: hashicorp/vault:1.15.0
@@ -44,8 +50,7 @@ spec:
             - name: vault-storage
               mountPath: /vault/data
             - name: config
-              mountPath: /vault/config
-              readOnly: true
+              mountPath: /vault/config # Mount the config directory with proper permissions
           resources:
             requests:
               memory: "512Mi"
@@ -75,11 +80,11 @@ spec:
       volumes:
         - name: vault-storage
           hostPath:
-            path: /mnt/vault-data
-            type: DirectoryOrCreate
+            path: /mnt/vault-data  # Path on the host node for Vault storage
+            type: DirectoryOrCreate  # Create the directory if it doesn't exist
         - name: config
           configMap:
-            name: vault-config
+            name: vault-config1  # Reference your Vault config map
             items:
               - key: vault.hcl
-                path: vault.hcl
+                path: vault.hcl  # Mount the file correctly into the container
