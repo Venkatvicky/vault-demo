@@ -13,18 +13,23 @@ spec:
       labels:
         app: vault-agent
     spec:
+      serviceAccountName: vault-sa
       containers:
         - name: vault-agent
           image: hashicorp/vault:1.15.0
+          command: ["vault", "agent", "-config=/vault/config/vault-agent-config.hcl", "-log-level=debug"]
+          securityContext:
+            capabilities:
+              add: ["IPC_LOCK"]
           volumeMounts:
-            - name: vault-agent-storage
-              mountPath: /mnt/data/vault-agent
-            - name: vault-config
+            - name: config
               mountPath: /vault/config
+              readOnly: true
+            - name: token
+              mountPath: /home/vault
       volumes:
-        - name: vault-agent-storage
-          persistentVolumeClaim:
-            claimName: vault-agent-pvc
-        - name: vault-config
+        - name: config
           configMap:
             name: vault-agent-config
+        - name: token
+          emptyDir: {}
