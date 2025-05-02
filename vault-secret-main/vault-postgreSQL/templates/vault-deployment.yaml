@@ -46,6 +46,7 @@ spec:
               cp /source/vault.hcl /vault/config/vault.hcl
               chmod 644 /vault/config/vault.hcl
               ls -l /vault/config  # Check if the file is copied
+              cat /vault/config/vault.hcl  # View the contents of vault.hcl
               sleep 30  # Keep the container running for debugging
           securityContext:
             runAsUser: 1000
