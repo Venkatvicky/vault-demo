@@ -1,8 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app.kubernetes.io/instance: vault
   name: vault
   namespace: vault
 spec:
@@ -15,22 +13,25 @@ spec:
       labels:
         app: vault
     spec:
-      automountServiceAccountToken: false
       serviceAccountName: vault-sa
-      securityContext:
-        fsGroup: 1000
-        runAsGroup: 1000
-        runAsUser: 1000
+      automountServiceAccountToken: false
+      initContainers:
+        - name: fix-permissions
+          image: busybox
+          command: ["sh", "-c", "mkdir -p /mnt/vault-data && chown -R 1000:1000 /mnt/vault-data"]
+          volumeMounts:
+            - name: vault-storage
+              mountPath: /mnt/vault-data
       containers:
         - name: vault
           image: hashicorp/vault:1.15.0
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           args:
             - server
             - '-config=/vault/config/vault.hcl'
           env:
             - name: VAULT_API_ADDR
-              value: http://0.0.0.0:8200  # HTTP instead of HTTPS
+              value: http://0.0.0.0:8200
             - name: VAULT_ADDR
               value: http://127.0.0.1:8200
             - name: VAULT_USER
@@ -40,15 +41,15 @@ spec:
           ports:
             - containerPort: 8200
           volumeMounts:
-            - mountPath: /vault/data
-              name: vault-storage
+            - name: vault-storage
+              mountPath: /vault/data
           resources:
-            limits:
-              cpu: '1'
-              memory: 1Gi
             requests:
-              cpu: 500m
-              memory: 512Mi
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
           livenessProbe:
             httpGet:
               path: /v1/sys/health?standbyok=true&sealedcode=200
@@ -62,33 +63,17 @@ spec:
             initialDelaySeconds: 180
             periodSeconds: 20
           securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
-            runAsGroup: 1000
-            runAsUser: 1000
-      initContainers:
-        - name: fix-permissions
-          image: alpine:latest
-          command:
-            - sh
-            - '-c'
-            - |
-              echo "Fixing permissions only on /mnt/vault-data"
-              chown -R 1000:1000 /mnt/vault-data || exit 0
-          securityContext:
-            allowPrivilegeEscalation: true  # Allow privilege escalation
-            capabilities:
-              add:
-                -  SETFCAP    # Add necessary capability for file system changes
-          volumeMounts:
-            - mountPath: /mnt/vault-data
-              name: vault-storage
       volumes:
         - name: vault-storage
-          persistentVolumeClaim:
-            claimName: vault-agent-pvc
+          hostPath:
+            path: /mnt/vault-data  # Path on the host node for Vault storage
+            type: DirectoryOrCreate  # Create the directory if it doesn't exist
         - name: config
           configMap:
-            name: vault-config4  # Reference the config map
+            name: vault-config  # Reference your Vault config map
