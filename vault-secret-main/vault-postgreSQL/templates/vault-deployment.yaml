@@ -16,41 +16,38 @@ spec:
       serviceAccountName: vault-sa
       automountServiceAccountToken: false
       initContainers:
-        - name: fix-permissions
+        - name: fix-data-permissions
           image: busybox
-          command: ["sh", "-c", "mkdir -p /mnt/vault-data && chown -R 1000:1000 /mnt/vault-data && chmod -R 755 /mnt/vault-data"]
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /mnt/vault-data
+              chown -R 1000:1000 /mnt/vault-data
+              chmod -R 700 /mnt/vault-data
           volumeMounts:
             - name: vault-storage
               mountPath: /mnt/vault-data
-        - name: fix-config-permissions
-          image: busybox
-          command: ["sh", "-c", "chmod 755 /vault/config && chown 1000:1000 /vault/config"]
-          volumeMounts:
-            - name: config
-              mountPath: /vault/config
       containers:
         - name: vault
           image: hashicorp/vault:1.15.0
           imagePullPolicy: IfNotPresent
           args:
-            - server
-            - '-config=/vault/config/vault.hcl'
+            - "server"
+            - "-config=/vault/config/vault.hcl"
           env:
             - name: VAULT_API_ADDR
               value: http://0.0.0.0:8200
             - name: VAULT_ADDR
               value: http://127.0.0.1:8200
-            - name: VAULT_USER
-              value: vaultuser
-            - name: VAULT_PASSWORD
-              value: vaultpass
           ports:
             - containerPort: 8200
           volumeMounts:
             - name: vault-storage
               mountPath: /vault/data
             - name: config
-              mountPath: /vault/config # Mount the config directory with proper permissions
+              mountPath: /vault/config
+              readOnly: true
           resources:
             requests:
               memory: "512Mi"
@@ -62,17 +59,18 @@ spec:
             httpGet:
               path: /v1/sys/health?standbyok=true&sealedcode=200
               port: 8200
-            initialDelaySeconds: 180
+            initialDelaySeconds: 30
             periodSeconds: 20
           readinessProbe:
             httpGet:
               path: /v1/sys/health?standbyok=true&sealedcode=200
               port: 8200
-            initialDelaySeconds: 180
+            initialDelaySeconds: 30
             periodSeconds: 20
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
+            fsGroup: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop:
@@ -80,11 +78,11 @@ spec:
       volumes:
         - name: vault-storage
           hostPath:
-            path: /mnt/vault-data  # Path on the host node for Vault storage
-            type: DirectoryOrCreate  # Create the directory if it doesn't exist
+            path: /mnt/vault-data
+            type: DirectoryOrCreate
         - name: config
           configMap:
-            name: vault-config # Reference your Vault config map
+            name: vault-config1
             items:
               - key: vault.hcl
-                path: vault.hcl  # Mount the file correctly into the container
+                path: vault.hcl
