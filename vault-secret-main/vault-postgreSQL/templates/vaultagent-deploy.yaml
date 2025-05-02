@@ -14,7 +14,6 @@ spec:
         app: vault-agent
     spec:
       serviceAccountName: vault-sa
-      automountServiceAccountToken: false
       containers:
       - name: vault-agent
         image: hashicorp/vault:1.15.0
@@ -23,17 +22,16 @@ spec:
           - "agent"
           - "-config=/vault/config/vault-agent-config.hcl"
         env:
-          - name: VAULT_ADDR
-            value: "http://vault:8200"
-          - name: VAULT_LOG_LEVEL
-            value: debug
+        - name: VAULT_ADDR
+          value: "http://vault:8200"
         ports:
-          - containerPort: 8200
+        - containerPort: 8200
         volumeMounts:
-          - name: vault-agent-config
-            mountPath: /vault/config
-          - name: vault-agent-storage
-            mountPath: /mnt/data/vault-agent
+        - name: vault-config
+          mountPath: /vault/config
+          readOnly: true
+        - name: vault-agent-storage
+          mountPath: /mnt/data/vault-agent
         resources:
           requests:
             memory: "256Mi"
@@ -61,9 +59,9 @@ spec:
             drop:
               - ALL
       volumes:
-        - name: vault-agent-config
-          configMap:
-            name: vault-agent-config
-        - name: vault-agent-storage
-          persistentVolumeClaim:
-            claimName: vault-agent-pvc
+      - name: vault-config
+        configMap:
+          name: vault-agent-config
+      - name: vault-agent-storage
+        persistentVolumeClaim:
+          claimName: vault-agent-pvc
