@@ -1,79 +1,82 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vault-agent
+  name: vault
   namespace: vault
-  labels:
-    app: vault-agent
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vault-agent
+      app: vault
   template:
     metadata:
       labels:
-        app: vault-agent
+        app: vault
     spec:
       serviceAccountName: vault-sa
       automountServiceAccountToken: false
-      containers:
-        - name: vault-agent
-          image: hashicorp/vault:1.15.0
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8200
-          volumeMounts:
-            - name: vault-agent-storage
-              mountPath: /mnt/data/vault-agent
-            - name: vault-config
-              mountPath: /vault/config
-              readOnly: true
-          env:
-            - name: VAULT_ADDR
-              value: "http://vault:8200"  # Adjust Vault address if needed
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "250m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
-          livenessProbe:
-            httpGet:
-              path: /v1/sys/health?standbyok=true&sealedcode=200
-              port: 8200
-            initialDelaySeconds: 60
-            periodSeconds: 20
-          readinessProbe:
-            httpGet:
-              path: /v1/sys/health?standbyok=true&sealedcode=200
-              port: 8200
-            initialDelaySeconds: 60
-            periodSeconds: 20
-      initContainers:
-        - name: fix-permissions
-          image: busybox
-          imagePullPolicy: Always
-          command:
-            - sh
-            - -c
-            - chown -R 1000:1000 /mnt/data/vault-agent
-          volumeMounts:
-            - name: vault-agent-storage
-              mountPath: /mnt/data/vault-agent
-          securityContext:
-            runAsUser: 0
-      volumes:
-        - name: vault-agent-storage
-          persistentVolumeClaim:
-            claimName: vault-agent-pvc
-        - name: vault-config
-          configMap:
-            name: vault-agent-config
-      restartPolicy: Always
       securityContext:
-        fsGroup: 1000
-        runAsGroup: 1000
         runAsUser: 1000
-      terminationGracePeriodSeconds: 30
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1000 /mnt/vault-data"]
+        volumeMounts:
+        - name: vault-storage
+          mountPath: /mnt/vault-data
+      containers:
+      - name: vault
+        image: hashicorp/vault:1.15.0
+        imagePullPolicy: Always
+        args:
+          - "server"
+          - "-config=/vault/config/vault.hcl"
+        env:
+        - name: VAULT_ADDR
+          value: http://127.0.0.1:8200
+        - name: VAULT_USER
+          value: "vaultuser"
+        - name: VAULT_PASSWORD
+          value: "vaultpass"
+        ports:
+        - containerPort: 8200
+        volumeMounts:
+        - name: vault-storage
+          mountPath: /vault/data
+        - name: config
+          mountPath: /vault/config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /v1/sys/health?standbyok=true&sealedcode=200
+            port: 8200
+          initialDelaySeconds: 180
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /v1/sys/health?standbyok=true&sealedcode=200
+            port: 8200
+          initialDelaySeconds: 180
+          periodSeconds: 20
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+      volumes:
+      - name: vault-storage
+        persistentVolumeClaim:
+          claimName: vault-pvc-new
+      - name: config
+        configMap:
+          name: vault-config4
