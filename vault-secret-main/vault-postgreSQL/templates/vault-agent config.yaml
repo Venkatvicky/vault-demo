@@ -11,7 +11,7 @@ data:
       method "kubernetes" {
         mount_path = "auth/kubernetes"
         config = {
-          role = "my-role"
+          role = "vault-role"
         }
       }
 
