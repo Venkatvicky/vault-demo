@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: vault-config1
+  name: vault-config
   namespace: vault
 data:
   vault.hcl: |
@@ -18,7 +18,11 @@ data:
 
     seal "awskms" {
       region = "us-west-2"
-      kms_key_id = "your-kms-key-id"  # Replace with your actual AWS KMS key ID
+      kms_key_id = "your-kms-key-id"
     }
 
     ui = true
+
+    audit {
+      file_path = "/vault/logs/audit.log"
+    }
