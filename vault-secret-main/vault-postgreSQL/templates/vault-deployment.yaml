@@ -7,6 +7,7 @@ metadata:
   namespace: vault
 spec:
   replicas: 1
+  progressDeadlineSeconds: 600 # Increased progress deadline
   selector:
     matchLabels:
       app: vault
@@ -46,11 +47,11 @@ spec:
               name: config
           resources:
             limits:
-              cpu: "1"
-              memory: 1Gi
+              cpu: "500m"   # Adjusted CPU limit
+              memory: 512Mi  # Adjusted memory limit
             requests:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 250m      # Adjusted CPU request
+              memory: 256Mi  # Adjusted memory request
           livenessProbe:
             httpGet:
               path: /v1/sys/health?standbyok=true&sealedcode=200
@@ -83,7 +84,7 @@ spec:
       volumes:
         - name: vault-storage
           persistentVolumeClaim:
-            claimName: vault-agent-pvc   # ✅ Using the existing working PVC
+            claimName: vault-agent-pvc
         - name: config
           configMap:
-            name: vault-config4           # ✅ Your ConfigMap name
+            name: vault-config
