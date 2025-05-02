@@ -5,19 +5,31 @@ metadata:
   namespace: vault
 data:
   vault-agent-config.hcl: |
-    pid_file = "/tmp/vault-agent-pid"
+    exit_after_auth = false
+    pid_file = "/mnt/data/vault-agent/pidfile"
 
     auto_auth {
-      method "kubernetes" {
+      method {
+        type = "kubernetes"
         mount_path = "auth/kubernetes"
         config = {
           role = "vault-role"
         }
       }
 
-      sink "file" {
+      sink {
+        type = "file"
         config = {
-          path = "/home/vault/.vault-token"
+          path = "/mnt/data/vault-agent/token"
         }
       }
+    }
+
+    cache {
+      use_auto_auth_token = true
+    }
+
+    listener "tcp" {
+      address = "0.0.0.0:8200"
+      tls_disable = true
     }
