@@ -22,12 +22,12 @@ spec:
             - sh
             - -c
             - |
-              mkdir -p /mnt/vault-data
-              chown -R 1000:1000 /mnt/vault-data
-              chmod -R 700 /mnt/vault-data
+              mkdir -p /vault/data
+              chown -R 1000:1000 /vault/data
+              chmod -R 700 /vault/data
           volumeMounts:
             - name: vault-storage
-              mountPath: /mnt/vault-data
+              mountPath: /vault/data
       containers:
         - name: vault
           image: hashicorp/vault:1.15.0
@@ -70,7 +70,6 @@ spec:
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
-            fsGroup: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop:
