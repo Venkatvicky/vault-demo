@@ -24,7 +24,10 @@ spec:
             - /bin/sh
             - -c
             - |
+              # Set permissions for /vault/config
               chmod -R 755 /vault/config || echo "warn: chmod fail"
+              # Ensure the vault.hcl file has correct permissions
+              chmod 644 /vault/config/vault.hcl || echo "warn: chmod fail"
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -79,8 +82,7 @@ spec:
             - name: vault-storage
               mountPath: /vault/data
             - name: configmap-copy
-              mountPath: /vault/config
-              readOnly: true
+              mountPath: /vault/config  # Allow write access
           resources:
             requests:
               memory: "512Mi"
@@ -120,4 +122,4 @@ spec:
               - key: vault.hcl
                 path: vault.hcl
         - name: configmap-copy
-          emptyDir: {}
+          emptyDir: {}  # Allow write access here
