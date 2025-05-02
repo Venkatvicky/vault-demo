@@ -44,8 +44,7 @@ spec:
             - name: vault-storage
               mountPath: /vault/data
             - name: config
-              mountPath: /vault/config # Specify file path directly
-              subPath: vault.hcl  # Mount only the file, not a directory
+              mountPath: /vault/config # Specify file path directl  # Mount only the file, not a directory
           resources:
             requests:
               memory: "512Mi"
