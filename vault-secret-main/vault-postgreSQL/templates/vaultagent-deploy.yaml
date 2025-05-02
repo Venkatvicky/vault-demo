@@ -13,58 +13,14 @@ spec:
       labels:
         app: vault-agent
     spec:
-      serviceAccountName: vault-sa
-      automountServiceAccountToken: false
       containers:
         - name: vault-agent
           image: hashicorp/vault:1.15.0
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8200
-          env:
-            - name: VAULT_ADDR
-              value: "http://vault:8200"  # Adjust Vault address if needed
           volumeMounts:
             - name: vault-agent-storage
               mountPath: /mnt/data/vault-agent
             - name: vault-config
-              mountPath: /vault/config  # No "readOnly: true" here
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "250m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
-          livenessProbe:
-            httpGet:
-              path: /v1/sys/health?standbyok=true&sealedcode=200
-              port: 8200
-            initialDelaySeconds: 60
-            periodSeconds: 20
-          readinessProbe:
-            httpGet:
-              path: /v1/sys/health?standbyok=true&sealedcode=200
-              port: 8200
-            initialDelaySeconds: 60
-            periodSeconds: 20
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-      initContainers:
-        - name: fix-permissions
-          image: busybox
-          command:
-            - sh
-            - -c
-            - chown -R 1000:1000 /mnt/data/vault-agent
-          volumeMounts:
-            - name: vault-agent-storage
-              mountPath: /mnt/data/vault-agent
+              mountPath: /vault/config
       volumes:
         - name: vault-agent-storage
           persistentVolumeClaim:
@@ -72,9 +28,3 @@ spec:
         - name: vault-config
           configMap:
             name: vault-agent-config
-      restartPolicy: Always
-      terminationGracePeriodSeconds: 30
-      securityContext:
-        fsGroup: 1000
-        runAsGroup: 1000
-        runAsUser: 1000
