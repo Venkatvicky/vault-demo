@@ -44,7 +44,7 @@ spec:
             - name: vault-storage
               mountPath: /vault/data
             - name: config
-              mountPath: /vault/config/vault.hcl  # Specify file path directly
+              mountPath: /vault/config # Specify file path directly
               subPath: vault.hcl  # Mount only the file, not a directory
           resources:
             requests:
