@@ -5,6 +5,7 @@ metadata:
   namespace: vault
 spec:
   replicas: 1
+  progressDeadlineSeconds: 600   # Increased timeout for overall deployment progress
   selector:
     matchLabels:
       app: postgres
@@ -45,23 +46,33 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
-        livenessProbe:
+        # Allow extra time for PostgreSQL to start
+        startupProbe:
           exec:
             command:
-              - pg_isready
-              - -U
-              - admin
+            - pg_isready
+            - -U
+            - admin
           initialDelaySeconds: 60
-          periodSeconds: 20
-          failureThreshold: 5
+          periodSeconds: 10
+          failureThreshold: 30
         readinessProbe:
           exec:
             command:
-              - pg_isready
-              - -U
-              - admin
-          initialDelaySeconds: 30
+            - pg_isready
+            - -U
+            - admin
+          initialDelaySeconds: 60  # Increased delay, so readiness checks start later
           periodSeconds: 10
+          failureThreshold: 5
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - admin
+          initialDelaySeconds: 60
+          periodSeconds: 20
           failureThreshold: 5
         securityContext:
           runAsUser: 1000
@@ -69,7 +80,7 @@ spec:
           allowPrivilegeEscalation: false
           capabilities:
             drop:
-              - ALL
+            - ALL
       volumes:
       - name: postgres-storage
         hostPath:
