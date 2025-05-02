@@ -26,10 +26,9 @@ spec:
         - name: vault
           image: hashicorp/vault:1.15.0
           imagePullPolicy: Always
-          command:
-            - "sh"
-            - "-c"
-            - "ls -l /mnt/vault-data && vault server -config=/vault/config/vault.hcl"
+          args:
+            - server
+            - '-config=/vault/config/vault.hcl'
           env:
             - name: VAULT_API_ADDR
               value: http://0.0.0.0:8200
@@ -78,7 +77,7 @@ spec:
           command:
             - sh
             - -c
-            - chown -R 1000:1000 /mnt/vault-data
+            - "ls -l /mnt/vault-data && chown -R 1000:1000 /mnt/vault-data || exit 1"
           volumeMounts:
             - mountPath: /mnt/vault-data
               name: vault-storage
