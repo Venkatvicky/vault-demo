@@ -68,4 +68,16 @@ spec:
           periodSeconds: 20
         securityContext:
           runAsUser: 1000
-          runAsGroup: 100
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+
+      volumes:
+      - name: vault-agent-storage
+        persistentVolumeClaim:
+          claimName: vault-agent-pvc
+      - name: vault-config
+        configMap:
+          name: vault-agent-config
