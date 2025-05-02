@@ -81,7 +81,7 @@ spec:
             allowPrivilegeEscalation: true  # Allow privilege escalation
             capabilities:
               add:
-                - SYS_ADMIN  # Add necessary capability for file system changes
+                -  SETFCAP    # Add necessary capability for file system changes
           volumeMounts:
             - mountPath: /mnt/vault-data
               name: vault-storage
