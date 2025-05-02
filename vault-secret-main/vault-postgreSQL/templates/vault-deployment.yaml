@@ -47,11 +47,11 @@ spec:
               name: config
           resources:
             limits:
-              cpu: "500m"   # Adjusted CPU limit
-              memory: 512Mi  # Adjusted memory limit
+              cpu: "500m"
+              memory: 512Mi
             requests:
-              cpu: 250m      # Adjusted CPU request
-              memory: 256Mi  # Adjusted memory request
+              cpu: 250m
+              memory: 256Mi
           livenessProbe:
             httpGet:
               path: /v1/sys/health?standbyok=true&sealedcode=200
@@ -71,16 +71,6 @@ spec:
                 - ALL
             runAsGroup: 1000
             runAsUser: 1000
-      initContainers:
-        - name: fix-permissions
-          image: busybox
-          command:
-            - sh
-            - -c
-            - "ls -l /mnt/vault-data && chown -R 1000:1000 /mnt/vault-data || exit 1"
-          volumeMounts:
-            - mountPath: /mnt/vault-data
-              name: vault-storage
       volumes:
         - name: vault-storage
           persistentVolumeClaim:
