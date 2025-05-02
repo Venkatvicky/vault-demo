@@ -1,36 +1,28 @@
-{{- if .Values.vault.createConfigMap }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: vault-config
-  namespace: {{ .Release.Namespace }}
+  name: vault-config4
+  namespace: vault
 data:
   vault.hcl: |
-    # PostgreSQL as the storage backend
     storage "postgresql" {
-      connection_url = "postgresql://{{ .Values.postgres.username }}:{{ .Values.postgres.password }}@postgres:5432/{{ .Values.postgres.database }}?sslmode=disable"
+      connection_url = "postgresql://vaultuser:vaultpassword@postgres:5432/vault_db?sslmode=disable"
     }
 
-    # Listener configuration (disable TLS for simplicity)
     listener "tcp" {
       address     = "0.0.0.0:8200"
       tls_disable = 1
     }
 
-    # Disabling mlock for containers (if necessary)
     disable_mlock = true
 
-    # Enabling Vault's seal to work with Kubernetes
     seal "awskms" {
-      region = "{{ .Values.aws.region }}"
-      kms_key_id = "{{ .Values.aws.kmsKeyId }}"
+      region = "us-west-2"
+      kms_key_id = "your-kms-key-id"
     }
 
-    # UI settings (optional)
     ui = true
 
-    # Enable audit logging (optional but recommended)
     audit {
       file_path = "/vault/logs/audit.log"
     }
-{{- end }}
