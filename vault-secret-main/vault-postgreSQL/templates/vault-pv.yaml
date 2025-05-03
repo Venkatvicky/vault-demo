@@ -10,6 +10,6 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: gp3-csi
+  storageClassName: ""  # Must be empty for manual binding
   hostPath:
     path: /mnt/vault-data
