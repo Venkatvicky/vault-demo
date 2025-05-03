@@ -9,5 +9,5 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: gp3-csi
-  volumeMode: Filesystem
+  volumeName: postgres-pv-new
+  storageClassName: ""  # <-- key change here
