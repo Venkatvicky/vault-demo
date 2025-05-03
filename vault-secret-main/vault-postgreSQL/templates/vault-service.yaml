@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: vault
   namespace: vault
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"  # Specify NLB type
 spec:
   selector:
     app: vault
@@ -10,5 +12,4 @@ spec:
     - protocol: TCP
       port: 8200
       targetPort: 8200
-      nodePort: 31000  # You can choose any available port
-  type: NodePort
+  type: LoadBalancer  # Still use LoadBalancer type for NLB
